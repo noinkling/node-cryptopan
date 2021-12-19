@@ -1,0 +1,27 @@
+{
+  "name": "cryptopan",
+  "version": "0.1.0",
+  "description": "Node.js implementation of the Crypto-PAn IP address pseudonymisation algorithm",
+  "main": "index.js",
+  "engines": {
+    "node": ">=15"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noinkling/node-cryptopan.git"
+  },
+  "author": "Malcolm McKeown",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/noinkling/node-cryptopan/issues"
+  },
+  "homepage": "https://github.com/noinkling/node-cryptopan#readme",
+  "devDependencies": {
+    "@types/node": "16",
+    "typescript": "~4.5.4"
+  }
+}
