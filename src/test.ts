@@ -1,10 +1,14 @@
 import assert from 'assert/strict';
 import { Buffer } from 'buffer';
 
+import ipCodec from '@leichtgewicht/ip-codec'
+
 import { CryptoPan } from './cryptopan';
 
 
 type IPv4 = `${number}.${number}.${number}.${number}`;
+type IPv4Pair = readonly [original: IPv4, pseudonymised: IPv4];
+type IPPair = readonly [original: string, pseudonymised: string];
 
 
 const TEST_KEY = Buffer.from([
@@ -12,7 +16,7 @@ const TEST_KEY = Buffer.from([
   216, 152, 143, 131, 121, 121, 101, 39, 98, 87, 76, 45, 42, 132, 34, 2,
 ]);
 
-const IPV4S: [original: IPv4, pseudonymised: IPv4][] = [
+const IPV4S: readonly IPv4Pair[] = [
   ['128.11.68.132', '135.242.180.132'],
   ['129.118.74.4', '134.136.186.123'],
   ['130.132.252.244', '133.68.164.234'],
@@ -88,7 +92,7 @@ const IPV4S: [original: IPv4, pseudonymised: IPv4][] = [
   ['127.0.0.1', '33.0.243.129'],
 ];
 
-const IPV6S: [original: string, pseudonymised: string][] = [
+const IPV6S: readonly IPPair[] = [
 
 ];
 
@@ -96,15 +100,19 @@ const IPV6S: [original: string, pseudonymised: string][] = [
 const cryptoPan = new CryptoPan(TEST_KEY);
 
 for (const [original, pseudonymised] of IPV4S) {
-  const originalBytes = original.split('.').map((numString) => parseInt(numString, 10));
-  const result = cryptoPan.pseudonymise(Buffer.from(originalBytes));
-  const resultString = result.join('.');
+  const originalBytes = ipCodec.v4.encode(original);
+  const result = cryptoPan.pseudonymiseIPv4(originalBytes);
+  const resultString = ipCodec.v4.decode(result);
 
   assert.equal(resultString, pseudonymised);
 }
 
 for (const [original, pseudonymised] of IPV6S) {
+  const originalBytes = ipCodec.v6.encode(original);
+  const result = cryptoPan.pseudonymiseIPv6(originalBytes);
+  const resultString = ipCodec.v6.decode(result);
 
+  assert.equal(resultString, pseudonymised);
 }
 
 console.log(`Tests completed successfully!`);

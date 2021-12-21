@@ -3,15 +3,15 @@ import { Buffer } from 'buffer';
 
 
 export class CryptoPan {
-  #cipher;
-  #padding;
+  readonly #cipher;
+  readonly #padding;
 
-  constructor(key: Buffer) {
+  constructor(key: Buffer | Uint8Array) {
     if (!(key instanceof Buffer)) {
-      throw new TypeError('`key` must be a Buffer object');
+      throw new TypeError(`'key' must be a Buffer or Uint8Array`);
     }
     if (key.length !== 32) {
-      throw new RangeError('`key` length must be 32 bytes (256 bits)');
+      throw new RangeError(`'key' buffer must be 32 bytes (256 bits) in length`);
     }
 
     // Use copies in case the memory for the original `key` changes:
@@ -25,20 +25,52 @@ export class CryptoPan {
     this.#padding = this.#cipher.update(padding);
   }
 
-  pseudonymise(ip: Buffer) {
-    if (!(ip instanceof Buffer)) {
-      throw new TypeError('`ip` must be a Buffer object');
+  pseudonymise(ip: Buffer | Uint8Array) {
+    if (!(ip instanceof Uint8Array)) {
+      throw new TypeError(`Provided IP address must be a Buffer or Uint8Array`);
     }
-    if (ip.length !== 4) {
-      throw new RangeError('`ip` length must be 4 bytes (32 bits)');
+    if (ip.length !== 4 && ip.length !== 16) {
+      throw new RangeError(
+        `Provided IP address buffer must be 4 bytes (32 bits) in length for IPv4, or 16 bytes (128 bits) for IPv6, was ${ip.length} bytes`
+      );
     }
 
+    return this._pseudonymise(ip);
+  }
+
+  pseudonymiseIPv4(ip: Buffer | Uint8Array) {
+    if (!(ip instanceof Uint8Array)) {
+      throw new TypeError(`Provided IP address must be a Buffer or Uint8Array`);
+    }
+    if (ip.length !== 4) {
+      throw new RangeError(
+        `Provided IP address buffer must be 4 bytes (32 bits) in length, was ${ip.length} bytes`
+      );
+    }
+
+    return this._pseudonymise(ip);
+  }
+
+  pseudonymiseIPv6(ip: Buffer | Uint8Array): never {
+    if (!(ip instanceof Uint8Array)) {
+      throw new TypeError(`Provided IP address must be a Buffer or Uint8Array`);
+    }
+    if (ip.length !== 16) {
+      throw new RangeError(
+        `Provided IP address buffer must be 16 bytes (128 bits) in length, was ${ip.length} bytes`
+      );
+    }
+
+    throw new Error('Not implemented')
+  }
+
+  _pseudonymise(ip: Buffer | Uint8Array) {
     // Creates a copy:
-    const input = Buffer.from(this.#padding);
+    const cipherInput = Buffer.from(this.#padding);
     // One-time pad, 32-bit buffer initialised with 0s:
     const otp = Buffer.alloc(4, 0);
 
-    let output = this.#cipher.update(input);
+    let output = this.#cipher.update(cipherInput);
     let byteIndex = 0;
     let bitIndex = 0;
     otp[byteIndex] |= (output[0] >>> 7) << 7;
@@ -51,9 +83,9 @@ export class CryptoPan {
       const ipByte = ip[byteIndex];
       const paddingByte = this.#padding[byteIndex];
 
-      input[byteIndex] = (ipByte & ipMask) | (paddingByte & paddingMask);
+      cipherInput[byteIndex] = (ipByte & ipMask) | (paddingByte & paddingMask);
 
-      output = this.#cipher.update(input);
+      output = this.#cipher.update(cipherInput);
 
       // Makes things easier to increment here:
       i++;
@@ -63,6 +95,6 @@ export class CryptoPan {
       otp[byteIndex] |= (output[0] >>> 7) << (7 - bitIndex);
     }
 
-    return ip.map((ipByte, byteIndex) => ipByte ^ otp[byteIndex]);
+    return ip.map((ipByte, byteIndex) => ipByte ^ otp[byteIndex]) as typeof ip;
   }
 }
