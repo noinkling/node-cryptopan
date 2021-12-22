@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Buffer } from 'buffer';
 
 
-export class CryptoPan {
+export class CryptoPAn {
   readonly #cipher;
   readonly #padding;
 
