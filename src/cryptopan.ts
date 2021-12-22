@@ -37,6 +37,7 @@ export class CryptoPAn {
 
     return this._pseudonymise(ip);
   }
+  pseudonymize = this.pseudonymise;
 
   pseudonymiseIPv4(ip: Buffer | Uint8Array) {
     if (!(ip instanceof Uint8Array)) {
@@ -50,6 +51,7 @@ export class CryptoPAn {
 
     return this._pseudonymise(ip);
   }
+  pseudonymizeIPv4 = this.pseudonymiseIPv4;
 
   pseudonymiseIPv6(ip: Buffer | Uint8Array) {
     if (!(ip instanceof Uint8Array)) {
@@ -63,6 +65,7 @@ export class CryptoPAn {
 
     return this._pseudonymise(ip);
   }
+  pseudonymizeIPv6 = this.pseudonymiseIPv6;
 
   _pseudonymise(ip: Buffer | Uint8Array) {
     if (ip.length > 16 || ip.length < 0) {
