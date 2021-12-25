@@ -238,7 +238,7 @@ export const TEST_SETS: readonly TestDataWithKey[] = [
     IPV4: [
       ['8.8.8.8', '50.54.20.240'],
       ['8.8.4.4', '50.54.28.11'],
-    ]
+    ],
   },
 
   // Obtained from:
@@ -257,6 +257,6 @@ export const TEST_SETS: readonly TestDataWithKey[] = [
     KEY: Buffer.from('boojahyoo3vaeToong0Eijee7Ahz3yee', 'latin1'),
     IPV4: [
       ['192.0.2.1', '206.2.124.120'],
-    ]
+    ],
   },
 ];

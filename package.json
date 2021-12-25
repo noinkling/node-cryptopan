@@ -2,14 +2,19 @@
   "name": "cryptopan",
   "version": "0.1.0",
   "description": "Node.js implementation of the Crypto-PAn IP address pseudonymisation algorithm",
-  "main": "index.js",
+  "keywords": ["cryptopan", "crypto-pan", "ip address", "pseudonymisation", "pseudonymization", "anonymisation", "anonymization", "prefix-preserving", "encryption", "privacy", "GDPR"],
+  "main": "./dist/cryptopan.js",
+  "types": "./dist/cryptopan.d.ts",
   "engines": {
     "node": ">=15"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "node ./dist/test/test.js"
+    "clean": "rm -rf ./dist/",
+    "test": "node ./dist/test/test.js",
+    "prepare": "npm run clean && npm run build",
+    "postpack": "npm test"
   },
   "repository": {
     "type": "git",
