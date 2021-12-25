@@ -13,7 +13,7 @@
     "watch": "tsc --watch",
     "clean": "rm -rf ./dist/",
     "test": "node ./dist/test/test.js",
-    "prepare": "npm run clean && npm run build",
+    "prepare": "npm run build",
     "postpack": "npm test"
   },
   "repository": {
