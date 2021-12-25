@@ -16,7 +16,7 @@ yarn add cryptopan
 
 ```js
 const { Buffer } = require('buffer');
-const CryptoPAn = require('cryptopan');
+const { CryptoPAn } = require('cryptopan');
 
 const cryptopan = new CryptoPAn(SECRET_KEY);
 
