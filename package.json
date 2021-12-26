@@ -17,10 +17,14 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "pretest": "npm run build",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
     "clean": "rm -rf ./dist/",
-    "test": "npm run build && jest",
+    "prepack": "npm run clean",
     "prepare": "npm run build",
-    "postpack": "jest"
+    "postpack": "jest",
+    "preversion": "npm run clean && npm test"
   },
   "devDependencies": {
     "@leichtgewicht/ip-codec": "^2.0.3",
