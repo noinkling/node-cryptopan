@@ -2,7 +2,13 @@
   "name": "cryptopan",
   "version": "0.2.1",
   "description": "Node.js implementation of the Crypto-PAn IP address pseudonymisation algorithm",
-  "keywords": ["cryptopan", "crypto-pan", "ip address", "pseudonymisation", "pseudonymization", "anonymisation", "anonymization", "prefix-preserving", "encryption", "privacy", "GDPR"],
+  "homepage": "https://github.com/noinkling/node-cryptopan#readme",
+  "author": "Malcolm McKeown",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noinkling/node-cryptopan.git"
+  },
   "main": "./dist/cryptopan.js",
   "types": "./dist/cryptopan.d.ts",
   "engines": {
@@ -12,23 +18,31 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "clean": "rm -rf ./dist/",
-    "test": "node ./dist/test/test.js",
+    "test": "npm run build && jest",
     "prepare": "npm run build",
-    "postpack": "npm test"
+    "postpack": "jest"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/noinkling/node-cryptopan.git"
-  },
-  "author": "Malcolm McKeown",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/noinkling/node-cryptopan/issues"
-  },
-  "homepage": "https://github.com/noinkling/node-cryptopan#readme",
   "devDependencies": {
     "@leichtgewicht/ip-codec": "^2.0.3",
+    "@types/jest": "^27.0.3",
     "@types/node": "16",
+    "jest": "^27.4.5",
     "typescript": "~4.5.4"
-  }
+  },
+  "jest": {
+    "rootDir": "./dist"
+  },
+  "keywords": [
+    "cryptopan",
+    "crypto-pan",
+    "IP address",
+    "pseudonymisation",
+    "pseudonymization",
+    "anonymisation",
+    "anonymization",
+    "prefix-preserving",
+    "encryption",
+    "privacy",
+    "GDPR"
+  ]
 }
