@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer'
+import { Buffer } from 'buffer';
 
 import ipCodec from '@leichtgewicht/ip-codec';
 
@@ -150,3 +150,38 @@ describe(`_pseudonymise()`, () => {
     expect(pseudonymisedUint8Array).toHaveLength(4);
   });
 });
+
+
+describe(`_decrypt()`, () => {
+
+  describe.each(TEST_SETS)('TEST_SETS[$#]', ({ KEY, IPV4, IPV6 }) => {
+
+    const cryptopan = new CryptoPAn(KEY);
+
+    if (IPV4) {
+      test(`IPv4 addresses`, () => {
+        expect.hasAssertions();
+        for (const [original, pseudonymised] of IPV4) {
+          const pseudonymisedBytes = ipCodec.v4.encode(pseudonymised);
+          const result = cryptopan['_decrypt'](pseudonymisedBytes);
+          const resultString = ipCodec.v4.decode(result);
+
+          expect(resultString).toBe(original);
+        }
+      });
+    }
+
+    if (IPV6) {
+      test(`IPv6 addresses`, () => {
+        expect.hasAssertions();
+        for (const [original, pseudonymised] of IPV6) {
+          const pseudonymisedBytes = ipCodec.v6.encode(pseudonymised);
+          const result = cryptopan['_decrypt'](pseudonymisedBytes);
+          const resultString = ipCodec.v6.decode(result);
+
+          expect(resultString).toBe(original);
+        }
+      });
+    }
+  });
+})
