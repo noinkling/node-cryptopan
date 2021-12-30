@@ -179,9 +179,42 @@ describe(`_decrypt()`, () => {
           const result = cryptopan['_decrypt'](pseudonymisedBytes);
           const resultString = ipCodec.v6.decode(result);
 
-          expect(resultString).toBe(original);
+          try {
+            expect(resultString).toBe(original);
+          } catch {
+            // Sometimes the original address may not be in the
+            // abbreviated/normalized form that ipCodec outputs
+            const normalizedOriginal = ipCodec.v6.decode(ipCodec.v6.encode(original));
+            expect(resultString).toBe(normalizedOriginal);
+          }
         }
       });
     }
   });
-})
+
+  test(`throws when input buffer length is more than 16 bytes (128 bits)`, () => {
+    expect(() => cryptopan['_decrypt'](Buffer.alloc(17))).toThrow(RangeError);
+  });
+
+  test(`output length is the same as input length`, () => {
+    for (const length of [0, 1, 4, 10, 15, 16]) {
+      const output = cryptopan['_decrypt'](Buffer.alloc(length));
+      expect(output).toHaveLength(length);
+    }
+  });
+
+  test(`output is an instance of Buffer when input is an instance of Buffer`, () => {
+    const pseudonymisedBuffer = cryptopan['_decrypt'](Buffer.alloc(4));
+    expect(pseudonymisedBuffer).toBeInstanceOf(Buffer);
+  });
+
+  test(`output is an instance of Uint8Array when input is an instance of Uint8Array`, () => {
+    const pseudonymisedUint8Array = cryptopan['_decrypt'](new Uint8Array(4));
+    expect(pseudonymisedUint8Array).toBeInstanceOf(Uint8Array);
+    // Buffer is a subclass of Uint8Array:
+    expect(pseudonymisedUint8Array).not.toBeInstanceOf(Buffer);
+    // Just in case there are any Jest shenanigans:
+    expect(Buffer.prototype).toBeInstanceOf(Uint8Array);
+    expect(pseudonymisedUint8Array).toHaveLength(4);
+  });
+});

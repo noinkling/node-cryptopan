@@ -121,6 +121,53 @@ export class CryptoPAn {
 
     return original.map((ipByte, byteIndex) => ipByte ^ otp[byteIndex]) as typeof original;
   }
+
+  /**
+   * De-pseudonymise a byte sequence
+   */
+  protected _decrypt(pseudonymised: Buffer | Uint8Array) {
+    if (!(pseudonymised instanceof Uint8Array)) {
+      throw new TypeError(`Provided argument must be a Buffer or Uint8Array`);
+    }
+    if (pseudonymised.length > 16 || pseudonymised.length < 0) {
+      throw new RangeError(
+        `Provided buffer must be between 0 and 16 bytes (128 bits) in length, was ${pseudonymised.length} bytes`
+      );
+    }
+
+    const cipherInput = Buffer.from(this.#padding);
+
+    const original = (pseudonymised instanceof Buffer)
+      ? Buffer.alloc(pseudonymised.length, 0)
+      : new Uint8Array(pseudonymised.length);
+
+    let output = this.#cipher.update(cipherInput);
+    let byteIndex = 0;
+    let bitIndex = 0;
+    original[byteIndex] = (pseudonymised[byteIndex] ^ output[0]) >>> 7 << 7;
+
+    const iterations = pseudonymised.length * 8 - 1;
+    for (let i = 0; i < iterations; ) {
+      const paddingMask = 0xff >>> (bitIndex + 1);
+
+      const originalByteSoFar = original[byteIndex];
+      const paddingByte = this.#padding[byteIndex];
+
+      cipherInput[byteIndex] = originalByteSoFar | (paddingByte & paddingMask);
+
+      output = this.#cipher.update(cipherInput);
+
+      i++;
+      byteIndex = i >>> 3;  // like Math.trunc(i / 8)
+      bitIndex = i & 7;  // like i % 8
+
+      const xored = pseudonymised[byteIndex] ^ (output[0] >>> bitIndex);
+      const xoredMask = 1 << (7 - bitIndex);
+      original[byteIndex] |= xored & xoredMask;
+    }
+
+    return original;
+  }
 }
 
 export default CryptoPAn;
