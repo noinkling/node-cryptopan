@@ -2,6 +2,9 @@ import crypto from 'crypto';
 import { Buffer } from 'buffer';
 
 
+const MSB_OF_BYTE_MASK = 0b1000_0000;
+
+
 export class CryptoPAn {
 
   readonly #cipher;
@@ -94,10 +97,10 @@ export class CryptoPAn {
     // One-time pad, initialised with 0s, which will be XORed later:
     const otp = Buffer.alloc(original.length, 0);
 
-    let output = this.#cipher.update(cipherInput);
+    let cipherOutput = this.#cipher.update(cipherInput);
     let byteIndex = 0;
     let bitIndex = 0;
-    otp[byteIndex] |= (output[0] >>> 7) << 7;
+    otp[byteIndex] |= cipherOutput[0] & MSB_OF_BYTE_MASK;
 
     const iterations = original.length * 8 - 1;
     for (let i = 0; i < iterations; ) {  // i is incremented inside the loop body
@@ -109,17 +112,20 @@ export class CryptoPAn {
 
       cipherInput[byteIndex] = (originalByte & originalMask) | (paddingByte & paddingMask);
 
-      output = this.#cipher.update(cipherInput);
+      cipherOutput = this.#cipher.update(cipherInput);
 
       // Makes things easier to increment here:
       i++;
       byteIndex = i >>> 3;  // like Math.trunc(i / 8)
       bitIndex = i & 7;  // like i % 8
 
-      otp[byteIndex] |= (output[0] >>> 7) << (7 - bitIndex);
+      otp[byteIndex] |= (cipherOutput[0] & MSB_OF_BYTE_MASK) >>> bitIndex;
     }
 
-    return original.map((ipByte, byteIndex) => ipByte ^ otp[byteIndex]) as typeof original;
+    return original.map(
+      (originalByte, i) => originalByte ^ otp[i]
+    // TS doesn't know that calling .map on a Buffer returns a Buffer:
+    ) as typeof original;
   }
 
   /**
@@ -136,37 +142,35 @@ export class CryptoPAn {
     }
 
     const cipherInput = Buffer.from(this.#padding);
+    // Will be transformed in-place to the original/decrypted sequence:
+    const result = Uint8Array.prototype.slice.call(pseudonymised);
 
-    const original = (pseudonymised instanceof Buffer)
-      ? Buffer.alloc(pseudonymised.length, 0)
-      : new Uint8Array(pseudonymised.length);
-
-    let output = this.#cipher.update(cipherInput);
+    let cipherOutput = this.#cipher.update(cipherInput);
     let byteIndex = 0;
     let bitIndex = 0;
-    original[byteIndex] = (pseudonymised[byteIndex] ^ output[0]) >>> 7 << 7;
+    result[byteIndex] ^= cipherOutput[0] & MSB_OF_BYTE_MASK;
 
     const iterations = pseudonymised.length * 8 - 1;
     for (let i = 0; i < iterations; ) {
       const paddingMask = 0xff >>> (bitIndex + 1);
+      const originalMask = ~paddingMask;
 
-      const originalByteSoFar = original[byteIndex];
+      const originalByteSoFar = result[byteIndex] & originalMask;
       const paddingByte = this.#padding[byteIndex];
 
       cipherInput[byteIndex] = originalByteSoFar | (paddingByte & paddingMask);
 
-      output = this.#cipher.update(cipherInput);
+      cipherOutput = this.#cipher.update(cipherInput);
 
       i++;
-      byteIndex = i >>> 3;  // like Math.trunc(i / 8)
-      bitIndex = i & 7;  // like i % 8
+      byteIndex = i >>> 3;
+      bitIndex = i & 7;
 
-      const xored = pseudonymised[byteIndex] ^ (output[0] >>> bitIndex);
-      const xoredMask = 1 << (7 - bitIndex);
-      original[byteIndex] |= xored & xoredMask;
+      const toXOR = (cipherOutput[0] & MSB_OF_BYTE_MASK) >>> bitIndex;
+      result[byteIndex] ^= toXOR;
     }
 
-    return original;
+    return result;
   }
 }
 
