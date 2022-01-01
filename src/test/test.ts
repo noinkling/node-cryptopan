@@ -41,6 +41,48 @@ describe(`matches the test/example cases of existing implementations`, () => {
 });
 
 
+describe(`de-pseudonymises correctly`, () => {
+
+  describe.each(TEST_SETS)('TEST_SETS[$#]', ({ KEY, IPV4, IPV6 }) => {
+
+    const cryptopan = new CryptoPAn(KEY);
+
+    if (IPV4) {
+      test(`IPv4 addresses`, () => {
+        expect.hasAssertions();
+        for (const [original, pseudonymised] of IPV4) {
+          const pseudonymisedBytes = ipCodec.v4.encode(pseudonymised);
+          const result = cryptopan.depseudonymiseIPv4(pseudonymisedBytes);
+          const resultString = ipCodec.v4.decode(result);
+
+          expect(resultString).toBe(original);
+        }
+      });
+    }
+
+    if (IPV6) {
+      test(`IPv6 addresses`, () => {
+        expect.hasAssertions();
+        for (const [original, pseudonymised] of IPV6) {
+          const pseudonymisedBytes = ipCodec.v6.encode(pseudonymised);
+          const result = cryptopan.depseudonymiseIPv6(pseudonymisedBytes);
+          const resultString = ipCodec.v6.decode(result);
+
+          try {
+            expect(resultString).toBe(original);
+          } catch {
+            // Sometimes the original address may not be in the
+            // abbreviated/normalized form that ipCodec outputs
+            const normalizedOriginal = ipCodec.v6.decode(ipCodec.v6.encode(original));
+            expect(resultString).toBe(normalizedOriginal);
+          }
+        }
+      });
+    }
+  });
+});
+
+
 describe(`new CryptoPAn()`, () => {
 
   test(`throws on unsupported key types`, () => {
@@ -81,12 +123,24 @@ const BAD_IPV6_INPUT = [
 
 const cryptopan = new CryptoPAn(Buffer.alloc(32));
 
+
 describe(`pseudonymiseIP()`, () => {
 
   test(`throws on unsupported input types`, () => {
     for (const input of [...BAD_IPV4_INPUT, ...BAD_IPV6_INPUT]) {
       // @ts-expect-error
       expect(() => cryptopan.pseudonymiseIP(input)).toThrow(TypeError);
+    }
+  });
+});
+
+
+describe(`depseudonymiseIP()`, () => {
+
+  test(`throws on unsupported input types`, () => {
+    for (const input of [...BAD_IPV4_INPUT, ...BAD_IPV6_INPUT]) {
+      // @ts-expect-error
+      expect(() => cryptopan.depseudonymiseIP(input)).toThrow(TypeError);
     }
   });
 });
@@ -107,6 +161,21 @@ describe(`pseudonymiseIPv4()`, () => {
 });
 
 
+describe(`depseudonymiseIPv4()`, () => {
+
+  test(`throws on unsupported input types`, () => {
+    for (const input of BAD_IPV4_INPUT) {
+      // @ts-expect-error
+      expect(() => cryptopan.depseudonymiseIPv4(input)).toThrow(TypeError);
+    }
+  });
+
+  test(`throws on IPv6 length input buffer`, () => {
+    expect(() => cryptopan.depseudonymiseIPv4(Buffer.alloc(16))).toThrow(RangeError);
+  });
+});
+
+
 describe(`pseudonymiseIPv6()`, () => {
 
   test(`throws on unsupported input types`, () => {
@@ -118,6 +187,21 @@ describe(`pseudonymiseIPv6()`, () => {
 
   test(`throws on IPv4 length input buffer`, () => {
     expect(() => cryptopan.pseudonymiseIPv6(Buffer.alloc(4))).toThrow(RangeError);
+  });
+});
+
+
+describe(`depseudonymiseIPv6()`, () => {
+
+  test(`throws on unsupported input types`, () => {
+    for (const input of BAD_IPV6_INPUT) {
+      // @ts-expect-error
+      expect(() => cryptopan.depseudonymiseIPv6(input)).toThrow(TypeError);
+    }
+  });
+
+  test(`throws on IPv4 length input buffer`, () => {
+    expect(() => cryptopan.depseudonymiseIPv6(Buffer.alloc(4))).toThrow(RangeError);
   });
 });
 
@@ -153,44 +237,6 @@ describe(`_pseudonymise()`, () => {
 
 
 describe(`_decrypt()`, () => {
-
-  describe.each(TEST_SETS)('TEST_SETS[$#]', ({ KEY, IPV4, IPV6 }) => {
-
-    const cryptopan = new CryptoPAn(KEY);
-
-    if (IPV4) {
-      test(`IPv4 addresses`, () => {
-        expect.hasAssertions();
-        for (const [original, pseudonymised] of IPV4) {
-          const pseudonymisedBytes = ipCodec.v4.encode(pseudonymised);
-          const result = cryptopan['_decrypt'](pseudonymisedBytes);
-          const resultString = ipCodec.v4.decode(result);
-
-          expect(resultString).toBe(original);
-        }
-      });
-    }
-
-    if (IPV6) {
-      test(`IPv6 addresses`, () => {
-        expect.hasAssertions();
-        for (const [original, pseudonymised] of IPV6) {
-          const pseudonymisedBytes = ipCodec.v6.encode(pseudonymised);
-          const result = cryptopan['_decrypt'](pseudonymisedBytes);
-          const resultString = ipCodec.v6.decode(result);
-
-          try {
-            expect(resultString).toBe(original);
-          } catch {
-            // Sometimes the original address may not be in the
-            // abbreviated/normalized form that ipCodec outputs
-            const normalizedOriginal = ipCodec.v6.decode(ipCodec.v6.encode(original));
-            expect(resultString).toBe(normalizedOriginal);
-          }
-        }
-      });
-    }
-  });
 
   test(`throws when input buffer length is more than 16 bytes (128 bits)`, () => {
     expect(() => cryptopan['_decrypt'](Buffer.alloc(17))).toThrow(RangeError);

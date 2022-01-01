@@ -1,6 +1,14 @@
 import crypto from 'crypto';
 import { Buffer } from 'buffer';
 
+import {
+  assertIsUint8Array,
+  assertLength,
+  assertBufferIsIPv4Length,
+  assertBufferIsIPv6Length,
+  assertBufferIsIPv4Or6Length,
+} from './utils';
+
 
 const MSB_OF_BYTE_MASK = 0b1000_0000;
 
@@ -8,28 +16,24 @@ const MSB_OF_BYTE_MASK = 0b1000_0000;
 export class CryptoPAn {
 
   readonly #cipher;
-  readonly #padding;
+  readonly #padding: Buffer;
 
   /**
    * @param key - A 32-byte (256-bit) buffer used to derive the cipher key and padding
    */
   constructor(key: Buffer | Uint8Array) {
-    if (!(key instanceof Buffer)) {
-      throw new TypeError(`'key' must be a Buffer or Uint8Array`);
-    }
-    if (key.length !== 32) {
-      throw new RangeError(`'key' buffer must be 32 bytes (256 bits) in length`);
-    }
+    assertIsUint8Array(key, `'key' must be a Buffer or Uint8Array`);
+    assertLength(key, 32, `'key' buffer must be 32 bytes (256 bits) in length`);
 
     // Use copies in case the memory for the original `key` changes:
     const cipherKey = Uint8Array.prototype.slice.call(key, 0, 16);
-    const padding = Uint8Array.prototype.slice.call(key, 16, 32);
+    const paddingInput = Uint8Array.prototype.slice.call(key, 16, 32);
 
     this.#cipher = crypto.createCipheriv('aes-128-ecb', cipherKey, null);
     // CryptoPAn uses its own padding scheme:
     this.#cipher.setAutoPadding(false);
 
-    this.#padding = this.#cipher.update(padding);
+    this.#padding = this.#cipher.update(paddingInput);
   }
 
   /**
@@ -37,14 +41,10 @@ export class CryptoPAn {
    * @param ip - A 4-byte or 16-byte buffer representing an IP address
    */
   pseudonymiseIP(ip: Buffer | Uint8Array) {
-    if (!(ip instanceof Uint8Array)) {
-      throw new TypeError(`IP address must be provided as a Buffer or Uint8Array`);
-    }
-    if (ip.length !== 4 && ip.length !== 16) {
-      throw new RangeError(
-        `Provided IP address buffer must be 4 bytes (32 bits) in length for IPv4, or 16 bytes (128 bits) for IPv6, was ${ip.length} bytes`
-      );
-    }
+    assertIsUint8Array(ip, `IP address must be provided as a Buffer or Uint8Array`);
+    assertBufferIsIPv4Or6Length(ip,
+      `Provided IP address buffer must be 4 bytes (32 bits) in length for IPv4, or 16 bytes (128 bits) for IPv6, was ${ip.length} bytes`
+    );
     return this._pseudonymise(ip);
   }
 
@@ -53,14 +53,10 @@ export class CryptoPAn {
    * @param ip - A 4-byte buffer representing an IPv4 address
    */
   pseudonymiseIPv4(ip: Buffer | Uint8Array) {
-    if (!(ip instanceof Uint8Array)) {
-      throw new TypeError(`IP address must be provided as a Buffer or Uint8Array`);
-    }
-    if (ip.length !== 4) {
-      throw new RangeError(
-        `Provided IPv4 address buffer must be 4 bytes (32 bits) in length, was ${ip.length} bytes`
-      );
-    }
+    assertIsUint8Array(ip, `IP address must be provided as a Buffer or Uint8Array`);
+    assertBufferIsIPv4Length(ip,
+      `Provided IPv4 address buffer must be 4 bytes (32 bits) in length, was ${ip.length} bytes`
+    );
     return this._pseudonymise(ip);
   }
 
@@ -69,24 +65,60 @@ export class CryptoPAn {
    * @param ip - A 16-byte buffer representing an IPv6 address
    */
   pseudonymiseIPv6(ip: Buffer | Uint8Array) {
-    if (!(ip instanceof Uint8Array)) {
-      throw new TypeError(`IP address must be provided as a Buffer or Uint8Array`);
-    }
-    if (ip.length !== 16) {
-      throw new RangeError(
-        `Provided IPv6 address buffer must be 16 bytes (128 bits) in length, was ${ip.length} bytes`
-      );
-    }
+    assertIsUint8Array(ip, `IP address must be provided as a Buffer or Uint8Array`);
+    assertBufferIsIPv6Length(ip,
+      `Provided IPv6 address buffer must be 16 bytes (128 bits) in length, was ${ip.length} bytes`
+    );
     return this._pseudonymise(ip);
+  }
+
+  /**
+   * De-pseudonymise an IPv4 or IPv6 address
+   * @param pseudonymisedIP - A 4-byte or 16-byte buffer representing a pseudonymised IP address
+   */
+  depseudonymiseIP(pseudonymisedIP: Buffer | Uint8Array) {
+    assertIsUint8Array(pseudonymisedIP,
+      `Pseudonymised IP address must be provided as a Buffer or Uint8Array`
+    );
+    assertBufferIsIPv4Or6Length(pseudonymisedIP,
+      `Provided buffer must be 4 bytes (32 bits) in length for a pseudonymised IPv4 address, or 16 bytes (128 bits) for a pseudonymised IPv6 address, was ${pseudonymisedIP.length} bytes`
+    );
+    return this._decrypt(pseudonymisedIP);
+  }
+
+  /**
+   * De-pseudonymise an IPv4 address
+   * @param pseudonymisedIP - A 4-byte buffer representing a pseudonymised IPv4 address
+   */
+  depseudonymiseIPv4(pseudonymisedIP: Buffer | Uint8Array) {
+    assertIsUint8Array(pseudonymisedIP,
+      `Pseudonymised IP address must be provided as a Buffer or Uint8Array`
+    );
+    assertBufferIsIPv4Length(pseudonymisedIP,
+      `Provided pseudonymised IPv4 address buffer must be 4 bytes (32 bits) in length, was ${pseudonymisedIP.length} bytes`
+    );
+    return this._decrypt(pseudonymisedIP);
+  }
+
+  /**
+   * De-pseudonymise an IPv6 address
+   * @param pseudonymisedIP - A 16-byte buffer representing a pseudonymised IPv6 address
+   */
+  depseudonymiseIPv6(pseudonymisedIP: Buffer | Uint8Array) {
+    assertIsUint8Array(pseudonymisedIP,
+      `Pseudonymised IP address must be provided as a Buffer or Uint8Array`
+    );
+    assertBufferIsIPv6Length(pseudonymisedIP,
+      `Provided pseudonymised IPv6 address buffer must be 16 bytes (128 bits) in length, was ${pseudonymisedIP.length} bytes`
+    );
+    return this._decrypt(pseudonymisedIP);
   }
 
   /**
    * Pseudonymise a byte sequence
    */
   protected _pseudonymise(original: Buffer | Uint8Array) {
-    if (!(original instanceof Uint8Array)) {
-      throw new TypeError(`Provided argument must be a Buffer or Uint8Array`);
-    }
+    assertIsUint8Array(original, `Provided argument must be a Buffer or Uint8Array`);
     if (original.length > 16 || original.length < 0) {
       throw new RangeError(
         `Provided buffer must be between 0 and 16 bytes (128 bits) in length, was ${original.length} bytes`
@@ -132,9 +164,7 @@ export class CryptoPAn {
    * De-pseudonymise a byte sequence
    */
   protected _decrypt(pseudonymised: Buffer | Uint8Array) {
-    if (!(pseudonymised instanceof Uint8Array)) {
-      throw new TypeError(`Provided argument must be a Buffer or Uint8Array`);
-    }
+    assertIsUint8Array(pseudonymised, `Provided argument must be a Buffer or Uint8Array`);
     if (pseudonymised.length > 16 || pseudonymised.length < 0) {
       throw new RangeError(
         `Provided buffer must be between 0 and 16 bytes (128 bits) in length, was ${pseudonymised.length} bytes`
