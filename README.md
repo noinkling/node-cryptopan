@@ -1,5 +1,7 @@
 # cryptopan
 
+[![npm](https://img.shields.io/npm/v/cryptopan)](https://www.npmjs.com/package/cryptopan)
+
 Node.js implementation of the [Crypto-PAn](https://en.wikipedia.org/wiki/Crypto-PAn) scheme. Cryptographically [pseudonymises](https://en.wikipedia.org/wiki/Pseudonymization) IP addresses in a way that subnets can still be compared (in addition to exact addresses).
 
 Like the reference and most other implementations, it uses AES-128-ECB as the pseudorandom function (PRF).
