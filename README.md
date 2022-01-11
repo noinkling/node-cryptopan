@@ -43,7 +43,7 @@ const pseudonymisedIP = ipaddr.fromByteArray(outputBuffer).toString();
 Outputs from different `CryptoPAn` instances are only comparable when the same secret key is used to create them. To generate an appropriate 32-byte key (which should be stored somewhere safe) you can run this from the terminal:
 
 ```bash
-node -e "console.log(crypto.randomBytes(32).toString('hex'))"
+node -p 'crypto.randomBytes(32).toString("hex")'
 ```
 
 You can use `Buffer.from(keyString, 'hex')` to convert it back to a buffer so it can be used with the `CryptoPAn` constructor.
