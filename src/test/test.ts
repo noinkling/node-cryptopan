@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 
-import ipCodec from '@leichtgewicht/ip-codec';
+import * as ipCodec from '@leichtgewicht/ip-codec';
 
 import { CryptoPAn } from '../cryptopan';
 import { TEST_SETS } from './test_data';
